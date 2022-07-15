@@ -29,6 +29,7 @@ class DroneSim(gym.Env):
 
     def reset(self):
         self.sim.reset_sim()
+        return self.sim.x0
 
     def step(self, action):
         obs_ = self.sim.do_sim(action)

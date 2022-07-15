@@ -41,8 +41,8 @@ class World():
                             [0, 0, 1, 0, 0, 0],
                             [0, 0, 0, 0, 1, 0]])
         # xdot x ydot y zdot z θdot θ φdot φ ψdot ψ, goal position x, y, z
-        self.x_sp = np.array([0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0])  # starting WAYPOINT (state in which the mission starts)
-        self.x0 = np.zeros_like(self.x_sp)  # init state of the drone
+        self.init_x_sp = np.array([0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0])  # starting WAYPOINT (state in which the mission starts)
+        self.init_x0 = np.zeros_like(self.init_x_sp)  # init state of the drone
 
         # measurement noise
         self.R = 1e-5 * np.eye(3)  # %process noise variance
@@ -60,10 +60,16 @@ class World():
 
         # Initial Condition and Initial Covariance matrix
         self.P_p = 0.001 * np.eye(6)  # %initial covariance matrix for the position (6 first coords)
-        self.hat_xp = np.zeros(6)  # initial guess of the initial position
+        self.init_hat_xp = np.zeros(6)  # initial guess of the initial position
         self.P_a = 0.01 * self.P_p  # cov matrix for the angle (6 last coords)
-        self.hat_xa = np.zeros(6)  # initial guess of the initial angle
-        self.hat_x0 = [np.concatenate([self.hat_xp, self.hat_xa])] # initial guess of the initial state
+        self.init_hat_xa = np.zeros(6)  # initial guess of the initial angle
+        self.init_hat_x0 = [np.concatenate([self.init_hat_xp, self.init_hat_xa])] # initial guess of the initial state
+        # Hack
+        self.hat_xp = self.init_hat_xp
+        self.hat_xa = self.init_hat_xa
+        self.hat_x0 = self.init_hat_x0
+        self.x_sp = self.init_x_sp
+        self.x0 = self.init_x0
 
     def qds_dt(self, x, U):
         """
@@ -191,10 +197,22 @@ class World():
 
     def reset_sim(self):
         # Loop for starting at a specific point or just return the init state
-        return self.hat_x0
+        self.hat_xp = self.init_hat_xp
+        self.hat_xa = self.init_hat_xa
+        self.hat_x0 = self.init_hat_x0
+        self.x_sp = self.init_x_sp
+        self.x0 = self.init_x0
+        # return
 
     def do_sim(self, action):
+        yp = self.Cp @ self.x0[:6] + np.sqrt(self.R) @ np.random.randn(3)  # position and velocity + noise. x0 vector is the ground truth
+        ya = self.Ca @ self.x0[6:] + np.sqrt(self.R) @ np.random.randn(3)  # angles and ang. velocities + noise.
+
+        [self.hat_xp, self.P_p] = self.rec_KF(self.hat_xp, self.P_p, yp, self.Qt, self.R, self.At, self.Bp, self.Cp, self.Dv, self.Bup, 0)  # position and velocity estimation
+        [self.hat_xa, self.P_a] = self.rec_KF(self.hat_xa, self.P_a, ya, self.Qt, self.R, self.At, self.Bp, self.Ca, self.Dv, self.Bup, 0)  # orientation and angular velocity estimation
+
+        self.hat_x0 = np.concatenate([self.hat_xp, self.hat_xa])  # 12 element vector with the new state drone
         x, y, z = action
-        x_sp = np.array([0, x, 0, y, 0, z, 0, 0, 0, 0, 0, 0])
-        cu = -K @ (hat_x0 - x_sp)
+        self.x_sp = np.array([0, x, 0, y, 0, z, 0, 0, 0, 0, 0, 0])
+        cu = -self.K @ (self.hat_x0 - self.x_sp)
         self.x0 = self.x0 + self.qds_dt(self.x0, cu) * self.ts
