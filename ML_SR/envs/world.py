@@ -2,8 +2,8 @@ import numpy as np
 import scipy.io as sci
 
 
-class World:
-    # static variables
+class World(object):
+    # static variables shared by all instances.
     ts = 0.002
     # ts = ts
     M = 0.6  # mass (Kg)
@@ -50,7 +50,7 @@ class World:
     sigma_a2 = 1e-4  # acceleration variance
 
     def __init__(self):
-        # elements bound to an instance of the class
+        # dynamic variables that belong to an instance of the class.
         # xdot x ydot y zdot z θdot θ φdot φ ψdot ψ, goal position x, y, z
         self.init_x_sp = np.array([0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0])  # starting WAYPOINT (state in which the mission starts)
         self.init_x0 = np.zeros_like(self.init_x_sp)  # init state of the drone
@@ -220,3 +220,4 @@ class World:
         self.x_sp = np.array([0, x, 0, y, 0, z, 0, 0, 0, 0, 0, 0])
         cu = -self.K @ (self.hat_x0 - self.x_sp)
         self.x0 = self.x0 + self.qds_dt(self.x0, cu) * self.ts
+        return self.hat_x0 # return the estimated state
