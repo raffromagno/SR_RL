@@ -207,7 +207,7 @@ Ca = np.array([[1, 0, 0, 0, 0, 0],
                [0, 0, 1, 0, 0, 0],
                [0, 0, 0, 0, 1, 0]])
 # xdot x ydot y zdot z θdot θ φdot φ ψdot ψ, goal position x, y, z
-x_sp = np.array([0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, ])  # starting WAYPOINT (state in which the mission starts)
+x_sp = np.array([0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0])  # starting WAYPOINT (state in which the mission starts)
 x0 = np.zeros_like(x_sp)  # init state of the drone
 
 # measurement noise
@@ -231,6 +231,7 @@ P_a = 0.01 * P_p  # cov matrix for the angle (6 last coords)
 hat_xa = np.zeros(6)  # initial guess of the initial angle
 
 # Simulation: Quadrotor takeoff, from zero
+# TODO: Put this in the reset function! basically into the world class in a function reset_world. Then env.reset will call this function. We need the returned last state to init the real mission.
 # Now we run the simulation to get the drone at x_sp (starting point). And
 # from there we will start later the full mission!
 Ns = len(tt)
@@ -240,8 +241,8 @@ hat_xx_tot = [np.concatenate([hat_xp, hat_xa])]
 
 # start loop from 1 as at t=0 we have stored the init states already
 for j in range(1,Ns):  # to validate the dynamics with python use -K*(x0-x_sp), i.e the ground truth state and not the noisy estimation
-    yp = Cp @ x0[:6] + np.sqrt(R) @ np.random.randn(3)  # position measurements. x0 is the ground truth
-    ya = Ca @ x0[6:] + np.sqrt(R) @ np.random.randn(3)  # angular vel.measurements
+    yp = Cp @ x0[:6] + np.sqrt(R) @ np.random.randn(3)  # position and velocity + noise. x0 vector is the ground truth
+    ya = Ca @ x0[6:] + np.sqrt(R) @ np.random.randn(3)  # angles and ang. velocities + noise.
 
     [hat_xp, P_p] = rec_KF(hat_xp, P_p, yp, Qt, R, At, Bp, Cp, Dv, Bup, 0)  # position and velocity estimation
     [hat_xa, P_a] = rec_KF(hat_xa, P_a, ya, Qt, R, At, Bp, Ca, Dv, Bup, 0)  # orientation and angular velocity estimation
