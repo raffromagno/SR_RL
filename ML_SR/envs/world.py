@@ -2,54 +2,58 @@ import numpy as np
 import scipy.io as sci
 
 
-class World():
+class World:
+    # static variables
+    ts = 0.002
+    # ts = ts
+    M = 0.6  # mass (Kg)
+    g = 9.81  # acceleration due to gravity m/s^2
+    ff = M * g
+    K = sci.loadmat('/Users/constantinos/Documents/Projects/SR_RL/ML_SR/control.mat')['K']
+    L = 0.2159 / 2  # arm length (m)
+    m = 0.410  # Sphere Mass (Kg)
+    Radius = 0.0503513  # Radius Sphere (m)
+
+    m_prop = 0.00311  # propeller mass (Kg)
+    m_m = 0.036 + m_prop  # motor +  propeller mass (Kg)
+
+    Ad = np.array([[1, 0],
+                   [ts, 1]])  # 2x2
+    Bd = np.array([[0, ts],
+                   [(1 / 2) * (ts ** 2), 0]])
+    A0 = np.zeros_like(Ad)
+    B0 = np.zeros_like(Bd)
+    At = np.asarray(np.bmat([[Ad, A0, A0],
+                             [A0, Ad, A0],
+                             [A0, A0, Ad]]))
+    # bmat: nice way consistent with matlab syntax: https://stackoverflow.com/questions/42154606/python-numpy-how-to-construct-a-big-diagonal-arraymatrix-from-two-small-array
+
+    Bp = np.asarray(np.bmat([[Bd, B0, B0],
+                             [B0, Bd, B0],
+                             [B0, B0, Bd]]))
+    Bup = np.array([0, 0, 0, 0, 0, ts])
+    Bua = np.zeros_like(Bup)
+
+    Cp = np.array([[0, 1, 0, 0, 0, 0],
+                   [0, 0, 0, 1, 0, 0],
+                   [0, 0, 0, 0, 0, 1]])
+
+    Ca = np.array([[1, 0, 0, 0, 0, 0],
+                   [0, 0, 1, 0, 0, 0],
+                   [0, 0, 0, 0, 1, 0]])
+
+    # measurement noise
+    R = 1e-5 * np.eye(3)  # %process noise variance
+    Dv = 3 * 1e-4
+
+    # process noise
+    sigma_a2 = 1e-4  # acceleration variance
+
     def __init__(self):
-        self.ts = 0.002
-        self.M = 0.6  # mass (Kg)
-        self.g = 9.81  # acceleration due to gravity m/s^2
-        self.ff = self.M * self.g
-        self.K = sci.loadmat('/Users/constantinos/Documents/Projects/SR_RL/ML_SR/control.mat')['K']
-        self.L = 0.2159 / 2  # arm length (m)
-        self.m = 0.410  # Sphere Mass (Kg)
-        self.Radius = 0.0503513  # Radius Sphere (m)
-
-        self.m_prop = 0.00311  # propeller mass (Kg)
-        self.m_m = 0.036 + self.m_prop  # motor +  propeller mass (Kg)
-
-        self.Ad = np.array([[1, 0],
-                            [self.ts, 1]])  # 2x2
-        self.Bd = np.array([[0, self.ts],
-                            [(1 / 2) * (self.ts ** 2), 0]])
-        self.A0 = np.zeros_like(self.Ad)
-        self.B0 = np.zeros_like(self.Bd)
-        self.At = np.asarray(np.bmat([[self.Ad, self.A0, self.A0],
-                                      [self.A0, self.Ad, self.A0],
-                                      [self.A0, self.A0, self.Ad]]))
-        # bmat: nice way consistent with matlab syntax: https://stackoverflow.com/questions/42154606/python-numpy-how-to-construct-a-big-diagonal-arraymatrix-from-two-small-array
-
-        self.Bp = np.asarray(np.bmat([[self.Bd, self.B0, self.B0],
-                                      [self.B0, self.Bd, self.B0],
-                                      [self.B0, self.B0, self.Bd]]))
-        self.Bup = np.array([0, 0, 0, 0, 0, self.ts])
-        self.Bua = np.zeros_like(self.Bup)
-
-        self.Cp = np.array([[0, 1, 0, 0, 0, 0],
-                            [0, 0, 0, 1, 0, 0],
-                            [0, 0, 0, 0, 0, 1]])
-
-        self.Ca = np.array([[1, 0, 0, 0, 0, 0],
-                            [0, 0, 1, 0, 0, 0],
-                            [0, 0, 0, 0, 1, 0]])
+        # elements bound to an instance of the class
         # xdot x ydot y zdot z θdot θ φdot φ ψdot ψ, goal position x, y, z
         self.init_x_sp = np.array([0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0])  # starting WAYPOINT (state in which the mission starts)
         self.init_x0 = np.zeros_like(self.init_x_sp)  # init state of the drone
-
-        # measurement noise
-        self.R = 1e-5 * np.eye(3)  # %process noise variance
-        self.Dv = 3 * 1e-4
-
-        # process noise
-        self.sigma_a2 = 1e-4  # acceleration variance
 
         self.Q = np.sqrt(self.sigma_a2) * np.array([[self.ts ** 4 / 4, self.ts ** 3 / 2],
                                                     [self.ts ** 3 / 2, self.ts ** 2]])  # process noise convariance matrix
@@ -63,7 +67,7 @@ class World():
         self.init_hat_xp = np.zeros(6)  # initial guess of the initial position
         self.P_a = 0.01 * self.P_p  # cov matrix for the angle (6 last coords)
         self.init_hat_xa = np.zeros(6)  # initial guess of the initial angle
-        self.init_hat_x0 = [np.concatenate([self.init_hat_xp, self.init_hat_xa])] # initial guess of the initial state
+        self.init_hat_x0 = [np.concatenate([self.init_hat_xp, self.init_hat_xa])]  # initial guess of the initial state
         # Hack
         self.hat_xp = self.init_hat_xp
         self.hat_xa = self.init_hat_xa
