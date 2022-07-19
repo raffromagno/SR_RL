@@ -38,6 +38,7 @@ W = np.array([[0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0],  # state waypoints (1,1,1) i
 world = World()  # <-- we need the parenthesis!!!
 env = DroneSim(world, goal=W[-1][[1, 3, 5]])
 env.reset()
+print('drone starts in', env.sim.init_hat_x0[[1, 3, 5]])
 episodes = W.shape[0]
 timesteps = 5
 done = 0
@@ -49,7 +50,7 @@ for epis in range(episodes):
         action = W[epis][[1, 3, 5]]  # x,y,z
         env.goal = action
         s, r, done, info = env.step(action)
-        print('dist:',r, 'done:', done)
+        print('dist:',r, 'done:', done, 'print:', action)
         xx_tot.append(s)
 
 print('DONE')

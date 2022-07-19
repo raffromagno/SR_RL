@@ -67,7 +67,7 @@ class World(object):
         self.init_hat_xp = np.zeros(6)  # initial guess of the initial position
         self.P_a = 0.01 * self.P_p  # cov matrix for the angle (6 last coords)
         self.init_hat_xa = np.zeros(6)  # initial guess of the initial angle
-        self.init_hat_x0 = [np.concatenate([self.init_hat_xp, self.init_hat_xa])]  # initial guess of the initial state
+        self.init_hat_x0 = np.concatenate([self.init_hat_xp, self.init_hat_xa])  # initial guess of the initial state
         # Hack
         self.hat_xp = self.init_hat_xp
         self.hat_xa = self.init_hat_xa
@@ -212,8 +212,8 @@ class World(object):
         yp = self.Cp @ self.x0[:6] + np.sqrt(self.R) @ np.random.randn(3)  # position and velocity + noise. x0 vector is the ground truth
         ya = self.Ca @ self.x0[6:] + np.sqrt(self.R) @ np.random.randn(3)  # angles and ang. velocities + noise.
 
-        [self.hat_xp, self.P_p] = self.rec_KF(self.hat_xp, self.P_p, yp, self.Qt, self.R, self.At, self.Bp, self.Cp, self.Dv, self.Bup, 0)  # position and velocity estimation
-        [self.hat_xa, self.P_a] = self.rec_KF(self.hat_xa, self.P_a, ya, self.Qt, self.R, self.At, self.Bp, self.Ca, self.Dv, self.Bup, 0)  # orientation and angular velocity estimation
+        self.hat_xp, self.P_p = self.rec_KF(self.hat_xp, self.P_p, yp, self.Qt, self.R, self.At, self.Bp, self.Cp, self.Dv, self.Bup, 0)  # position and velocity estimation
+        self.hat_xa, self.P_a = self.rec_KF(self.hat_xa, self.P_a, ya, self.Qt, self.R, self.At, self.Bp, self.Ca, self.Dv, self.Bup, 0)  # orientation and angular velocity estimation
 
         self.hat_x0 = np.concatenate([self.hat_xp, self.hat_xa])  # 12 element vector with the new state drone
         x, y, z = action
