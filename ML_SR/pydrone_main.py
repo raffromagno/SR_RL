@@ -46,12 +46,12 @@ done = 0
 xx_tot = []
 # Notes: We will change the env.goal to each of the waypoints. when the drone reaches the waypoint task is done
 for epis in range(episodes):
-    while not done:  # while (not done):
-        action = W[epis][[1, 3, 5]]  # x,y,z
-        env.goal = action
-        s, r, done, info = env.step(action)
-        print('dist:',r, 'done:', done, 'print:', action)
-        xx_tot.append(s)
+# while not done:  # while (not done):
+    action = W[epis][[1, 3, 5]]  # x,y,z
+    env.goal = action
+    s, r, done, info = env.step(action)
+    print('dist:',r, 'done:', done, 'print:', action)
+    xx_tot.append(s)
 
 print('DONE')
 X = np.stack(xx_tot, axis=0)

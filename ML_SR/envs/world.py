@@ -209,15 +209,16 @@ class World(object):
         # return
 
     def do_sim(self, action):
-        yp = self.Cp @ self.x0[:6] + np.sqrt(self.R) @ np.random.randn(3)  # position and velocity + noise. x0 vector is the ground truth
-        ya = self.Ca @ self.x0[6:] + np.sqrt(self.R) @ np.random.randn(3)  # angles and ang. velocities + noise.
+        for time in range(5):
+            yp = self.Cp @ self.x0[:6] + np.sqrt(self.R) @ np.random.randn(3)  # position and velocity + noise. x0 vector is the ground truth
+            ya = self.Ca @ self.x0[6:] + np.sqrt(self.R) @ np.random.randn(3)  # angles and ang. velocities + noise.
 
-        self.hat_xp, self.P_p = self.rec_KF(self.hat_xp, self.P_p, yp, self.Qt, self.R, self.At, self.Bp, self.Cp, self.Dv, self.Bup, 0)  # position and velocity estimation
-        self.hat_xa, self.P_a = self.rec_KF(self.hat_xa, self.P_a, ya, self.Qt, self.R, self.At, self.Bp, self.Ca, self.Dv, self.Bup, 0)  # orientation and angular velocity estimation
+            self.hat_xp, self.P_p = self.rec_KF(self.hat_xp, self.P_p, yp, self.Qt, self.R, self.At, self.Bp, self.Cp, self.Dv, self.Bup, 0)  # position and velocity estimation
+            self.hat_xa, self.P_a = self.rec_KF(self.hat_xa, self.P_a, ya, self.Qt, self.R, self.At, self.Bp, self.Ca, self.Dv, self.Bup, 0)  # orientation and angular velocity estimation
 
-        self.hat_x0 = np.concatenate([self.hat_xp, self.hat_xa])  # 12 element vector with the new state drone
-        x, y, z = action
-        self.x_sp = np.array([0, x, 0, y, 0, z, 0, 0, 0, 0, 0, 0])
-        cu = -self.K @ (self.hat_x0 - self.x_sp)
-        self.x0 = self.x0 + self.qds_dt(self.x0, cu) * self.ts
+            self.hat_x0 = np.concatenate([self.hat_xp, self.hat_xa])  # 12 element vector with the new state drone
+            x, y, z = action
+            self.x_sp = np.array([0, x, 0, y, 0, z, 0, 0, 0, 0, 0, 0])
+            cu = -self.K @ (self.hat_x0 - self.x_sp)
+            self.x0 = self.x0 + self.qds_dt(self.x0, cu) * self.ts
         return self.hat_x0 # return the estimated state
