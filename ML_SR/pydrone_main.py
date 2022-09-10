@@ -36,7 +36,7 @@ W = np.array([[0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0],  # state waypoints (1,1,1) i
               [0, 1, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0],
               [0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0]])
 world = World()  # <-- we need the parenthesis!!!
-env = DroneSim(world, goal=W[-1][[1, 3, 5]])
+env = DroneSim(world, goal=W[-1][[1, 3, 5]]) # [1, 3, 5] are the indices of the x, y, z in the W array.
 env.reset()
 print('drone starts in', env.sim.init_hat_x0[[1, 3, 5]])
 episodes = W.shape[0]
@@ -44,6 +44,8 @@ timesteps = 5
 done = 0
 
 xx_tot = []
+s0 = world.hat_x0 # initial drone state (estimated)
+xx_tot.append(s0) # add the init est state in the list for plotting it.
 # Notes: We will change the env.goal to each of the waypoints. when the drone reaches the waypoint task is done
 for epis in range(episodes):
 # while not done:
