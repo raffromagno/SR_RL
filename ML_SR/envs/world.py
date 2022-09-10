@@ -209,7 +209,7 @@ class World(object):
         # return
 
     def do_sim(self, action):
-        for time in range(5):
+        for time in range(20000):  # 20000 is the original, and you get very close to the target points.
             yp = self.Cp @ self.x0[:6] + np.sqrt(self.R) @ np.random.randn(3)  # position and velocity + noise. x0 vector is the ground truth
             ya = self.Ca @ self.x0[6:] + np.sqrt(self.R) @ np.random.randn(3)  # angles and ang. velocities + noise.
 
@@ -220,5 +220,6 @@ class World(object):
             x, y, z = action
             self.x_sp = np.array([0, x, 0, y, 0, z, 0, 0, 0, 0, 0, 0])
             cu = -self.K @ (self.hat_x0 - self.x_sp)
+            cu[0] = cu[0] + 0.6*9.81
             self.x0 = self.x0 + self.qds_dt(self.x0, cu) * self.ts
         return self.hat_x0 # return the estimated state
