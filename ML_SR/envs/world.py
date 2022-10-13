@@ -9,7 +9,7 @@ class World(object):
     M = 0.6  # mass (Kg)
     g = 9.81  # acceleration due to gravity m/s^2
     ff = M * g
-    K = sci.loadmat('/Users/constantinos/Documents/Projects/SR_RL/ML_SR/control.mat')['K']
+    K = sci.loadmat('/Users/sangela/Desktop/DeepRL/SR_RL/ML_SR/control.mat')['K']
     L = 0.2159 / 2  # arm length (m)
     m = 0.410  # Sphere Mass (Kg)
     Radius = 0.0503513  # Radius Sphere (m)
@@ -74,6 +74,8 @@ class World(object):
         self.hat_x0 = self.init_hat_x0
         self.x_sp = self.init_x_sp
         self.x0 = self.init_x0
+        # Trajectory Plot
+        self.collect_traj = []
 
     def qds_dt(self, x, U):
         """
@@ -199,27 +201,44 @@ class World(object):
         P_kk = (np.eye(n) - Kk @ Cd) @ P  # P(k+1|k+1)
         return x_kk, P_kk
 
-    def reset_sim(self):
+    def reset_sim(self, start=[1,1,1]):
+        # TO DO: random init
+        x0 = np.zeros(12)
+        x0[[1,3,5]] = start
         # Loop for starting at a specific point or just return the init state
         self.hat_xp = self.init_hat_xp
         self.hat_xa = self.init_hat_xa
         self.hat_x0 = self.init_hat_x0
-        self.x_sp = self.init_x_sp
-        self.x0 = self.init_x0
-        # return
+        self.x_sp = x0
+        self.x0 = x0
 
     def do_sim(self, action):
-        for time in range(20000):  # 20000 is the original, and you get very close to the target points.
+        # for time in range(6000):  # 20000 is the original, and you get very close to the target points.
+        for time in range(3000):  # 20000 is the original, and you get very close to the target points.
             yp = self.Cp @ self.x0[:6] + np.sqrt(self.R) @ np.random.randn(3)  # position and velocity + noise. x0 vector is the ground truth
             ya = self.Ca @ self.x0[6:] + np.sqrt(self.R) @ np.random.randn(3)  # angles and ang. velocities + noise.
 
-            self.hat_xp, self.P_p = self.rec_KF(self.hat_xp, self.P_p, yp, self.Qt, self.R, self.At, self.Bp, self.Cp, self.Dv, self.Bup, 0)  # position and velocity estimation
-            self.hat_xa, self.P_a = self.rec_KF(self.hat_xa, self.P_a, ya, self.Qt, self.R, self.At, self.Bp, self.Ca, self.Dv, self.Bup, 0)  # orientation and angular velocity estimation
+            # self.hat_xp, self.P_p = self.rec_KF(self.hat_xp, self.P_p, yp, self.Qt, self.R, self.At, self.Bp, self.Cp, self.Dv, self.Bup, 0)  # position and velocity estimation
+            # self.hat_xa, self.P_a = self.rec_KF(self.hat_xa, self.P_a, ya, self.Qt, self.R, self.At, self.Bp, self.Ca, self.Dv, self.Bup, 0)  # orientation and angular velocity estimation
 
-            self.hat_x0 = np.concatenate([self.hat_xp, self.hat_xa])  # 12 element vector with the new state drone
+            # self.hat_x0 = np.concatenate([self.hat_xp, self.hat_xa])  # 12 element vector with the new state drone
             x, y, z = action
             self.x_sp = np.array([0, x, 0, y, 0, z, 0, 0, 0, 0, 0, 0])
-            cu = -self.K @ (self.hat_x0 - self.x_sp)
+            # cu = -self.K @ (self.hat_x0 - self.x_sp)
+            cu = -self.K @ (self.x0 - self.x_sp)
             cu[0] = cu[0] + 0.6*9.81
+            
+            ## TO DO: constraints on cu
+            # cu[1,2,3]: +/-0.432
+            # cu[0]: 0 - 16
+            epsilon = 1e-15
+            min_bound = np.array([0,-0.432,-0.432,-0.432])+epsilon
+            max_bound = np.array([16,0.432,0.432,0.432])-epsilon
+
+            cu = np.clip(cu,min_bound,max_bound)
+
             self.x0 = self.x0 + self.qds_dt(self.x0, cu) * self.ts
-        return self.hat_x0 # return the estimated state
+            self.cu.append(cu)
+            self.theta.append(self.x0[9])
+            self.collect_traj.append(self.x0)
+        return self.x0 # return the estimated state
