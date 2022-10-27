@@ -232,8 +232,8 @@ class World(object):
             # cu[1,2,3]: +/-0.432
             # cu[0]: 0 - 16
             epsilon = 1e-15
-            min_bound = np.array([0,-0.432,-0.432,-0.432])+epsilon
-            max_bound = np.array([16,0.432,0.432,0.432])-epsilon
+            min_bound = np.array([0,-0.0432,-0.0432,-0.0432])+epsilon
+            max_bound = np.array([16,0.0432,0.0432,0.0432])-epsilon
 
             cu = np.clip(cu,min_bound,max_bound)
 
