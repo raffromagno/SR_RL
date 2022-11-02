@@ -3,7 +3,7 @@ import scipy.io as sci
 
 
 class World(object):
-    # static variables shared by all instances.
+    # static variables shared by all instances. You can still call them using self.
     ts = 0.002
     # ts = ts
     M = 0.6  # mass (Kg)
@@ -74,6 +74,7 @@ class World(object):
         self.hat_x0 = self.init_hat_x0
         self.x_sp = self.init_x_sp
         self.x0 = self.init_x0
+        self.collect_traj = []
 
     def qds_dt(self, x, U):
         """
@@ -204,12 +205,14 @@ class World(object):
         self.hat_xp = self.init_hat_xp
         self.hat_xa = self.init_hat_xa
         self.hat_x0 = self.init_hat_x0
-        self.x_sp = self.init_x_sp
+        self.x_sp = self.init_x_sp # sp = starting point
         self.x0 = self.init_x0
+        self.collect_traj.append(self.x0)
         # return
 
     def do_sim(self, action):
-        for time in range(20000):  # 20000 is the original, and you get very close to the target points.
+        for time in range(6000):  # 20000 is the original, and you get very close to the target points. 6000 seems the minimum reps needed.
+            # x0 is the real state. We add noise and we estimate the hat_x0 with kalman filter which is what the drone's position estimated by the drone
             yp = self.Cp @ self.x0[:6] + np.sqrt(self.R) @ np.random.randn(3)  # position and velocity + noise. x0 vector is the ground truth
             ya = self.Ca @ self.x0[6:] + np.sqrt(self.R) @ np.random.randn(3)  # angles and ang. velocities + noise.
 
@@ -219,7 +222,8 @@ class World(object):
             self.hat_x0 = np.concatenate([self.hat_xp, self.hat_xa])  # 12 element vector with the new state drone
             x, y, z = action
             self.x_sp = np.array([0, x, 0, y, 0, z, 0, 0, 0, 0, 0, 0])
-            cu = -self.K @ (self.hat_x0 - self.x_sp)
-            cu[0] = cu[0] + 0.6*9.81
+            cu = -self.K @ (self.hat_x0 - self.x_sp) # action remains constant. The only thing that changes is the hat_x0, this is what gets updated
+            cu[0] = cu[0] + self.ff  # 0.6*9.81= M*g
             self.x0 = self.x0 + self.qds_dt(self.x0, cu) * self.ts
+            self.collect_traj.append(self.x0)
         return self.hat_x0 # return the estimated state

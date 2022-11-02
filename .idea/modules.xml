@@ -7,7 +7,6 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/SR_RL.iml" filepath="$PROJECT_DIR$/.idea/SR_RL.iml" />
       <module fileurl="file:///Volumes/GoogleDrive/My Drive/Trading/.idea/Trading.iml" filepath="/Volumes/GoogleDrive/My Drive/Trading/.idea/Trading.iml" />
       <module fileurl="file://$PROJECT_DIR$/../genreal_grid/.idea/genreal_grid.iml" filepath="$PROJECT_DIR$/../genreal_grid/.idea/genreal_grid.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../mappo/.idea/mappo.iml" filepath="$PROJECT_DIR$/../mappo/.idea/mappo.iml" />
     </modules>
   </component>
 </project>
